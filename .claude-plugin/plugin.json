@@ -1,7 +1,7 @@
 {
   "name": "insane-search",
-  "version": "0.2.0",
-  "description": "Platform-specific access strategies for AI agents — auto-bypasses blocked sites (X/Twitter, Reddit, Stack Overflow, Naver) without API keys",
+  "version": "0.3.0",
+  "description": "Platform-specific access strategies for AI agents — auto-bypasses blocked sites (X/Twitter, Reddit, Stack Overflow, Naver, Coupang, LinkedIn) without API keys. Phase 0→3 adaptive scheduler with curl_cffi TLS impersonation and auto dependency install.",
   "author": {
     "name": "fivetaku",
     "url": "https://github.com/fivetaku"
@@ -9,5 +9,5 @@
   "homepage": "https://github.com/fivetaku/insane-search",
   "repository": "https://github.com/fivetaku/insane-search",
   "license": "MIT",
-  "keywords": ["web-access", "search", "webfetch", "bypass", "jina", "yt-dlp", "twitter", "reddit", "youtube", "naver", "bluesky", "github", "arxiv", "medium", "hacker-news", "mastodon", "threads", "stackoverflow", "dcinside", "fmkorea"]
+  "keywords": ["web-access", "search", "webfetch", "bypass", "jina", "yt-dlp", "twitter", "reddit", "youtube", "naver", "bluesky", "github", "arxiv", "medium", "hacker-news", "mastodon", "threads", "stackoverflow", "dcinside", "fmkorea", "coupang", "linkedin", "yozm", "curl_cffi", "tls-impersonation", "playwright", "amp-cache", "archive"]
 }

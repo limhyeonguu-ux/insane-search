@@ -130,29 +130,4 @@ curl -sL "https://www.v2ex.com/api/topics/hot.json" -H "User-Agent: insane-searc
 
 ## RSS 피드
 
-```bash
-# 네이버 블로그
-curl -sL "https://rss.blog.naver.com/{BLOG_ID}.xml"
-
-# 티스토리
-curl -sL "https://{blogname}.tistory.com/rss"
-
-# HN (hnrss.org)
-curl -sL "https://hnrss.org/frontpage"
-
-# GitHub 릴리즈
-curl -sL "https://github.com/{owner}/{repo}/releases.atom"
-
-# YouTube 채널
-curl -sL "https://www.youtube.com/feeds/videos.xml?channel_id={id}"
-
-# 벨로그 (사용자별)
-curl -sL "https://v2.velog.io/rss/@{username}"
-
-# feedparser로 파싱
-python3 -c "
-import feedparser
-for e in feedparser.parse('FEED_URL').entries[:10]:
-    print(f'{e.title} — {e.link}')
-"
-```
+→ [rss.md](rss.md)로 이동. 한국 언론 RSS, Google News RSS, feedparser 사용법 등 상세 가이드 참조.

@@ -40,9 +40,24 @@ Jina Reader로 실시간 주가, 주요 뉴스 접근.
 curl -s "https://r.jina.ai/https://finance.naver.com/item/main.naver?code={종목코드}"
 ```
 
+## 네이버 금융 시세 (비공식, 무인증)
+
+인증 불필요. 주가 시계열 데이터 JSON 반환.
+
+```bash
+# 일봉 시세 (삼성전자=005930)
+curl -sL "https://api.finance.naver.com/siseJson.naver?symbol=005930&requestType=1&startTime=20240101&endTime=20241231&timeframe=day"
+
+# 분봉
+curl -sL "https://api.finance.naver.com/siseJson.naver?symbol=005930&requestType=0&timeframe=minute&count=200"
+```
+
+응답: `[[날짜, 시가, 고가, 저가, 종가, 거래량, 외국인거래율], ...]`
+
 ## 네이버 카페
 
-**접근 불가** — 로그인 + iframe 이중 장벽. 우회 방법 없음.
+로그인 + iframe 이중 장벽. 본문 직접 접근 불가.
+fallback 체인에서 Phase 1~3을 시도하되, login/paywall 감지 시 "인증 필요"로 종료.
 
 ## 네이버 TV
 

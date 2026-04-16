@@ -1,89 +1,144 @@
-# 접근 불가 시 우회 전략 (Fallback)
+# 접근 실패 시 — 적응형 스케줄러
 
-> WebSearch/WebFetch/플랫폼별 전략 모두 실패했을 때 아래 순서로 시도.
+> 인덱스 방법이 실패하거나 인덱스에 없는 사이트일 때 실행.
+> Phase 0 → 1 → 2 → 3 순서로 에스컬레이션. 각 Phase에서 성공하면 즉시 종료.
 
-## 1. 모바일 URL 변환 + curl
+## 원칙
 
-도메인별 최적 방법:
+1. **어떤 방법도 미리 제외하지 않는다** — 되는지는 시도해봐야 안다
+2. **의존성이 없으면 설치하고 시도한다** — 미설치를 이유로 건너뛰지 않는다
+3. **Phase 간 전환은 신호 기반** — 실패 유형에 따라 에스컬레이션
+4. **결과 채택 기준**: 정확성/신뢰도 > 신선도 > 완전성 > 구조화 > 비용
 
-| 도메인 패턴 | 최적 방법 |
-|-----------|---------|
-| `blog.naver.com` | 모바일 URL + iPhone UA |
-| `*.tistory.com` | WebFetch (정상) 또는 RSS |
-| `brunch.co.kr` | WebFetch (정상) |
-| `linkedin.com` | WebSearch → WebFetch (정상) |
-| `*.naver.com` (기타) | Playwright MCP (JS 렌더링 필요) |
-| 페이월 사이트 | Google 캐시 → Wayback |
+---
 
+## Phase 0: 특수 엔드포인트 (인덱스 매칭)
+
+인덱스에 사이트가 있으면 해당 전용 방법을 **먼저** 시도.
+정확성과 비용이 가장 좋으므로 generic Phase 1보다 우선.
+
+성공 → 종료 / 실패 → Phase 1
+
+---
+
+## Phase 1: 경량 프로브 (병렬)
+
+**먼저 시도** (동시):
+- WebFetch (Claude 내장)
+- Jina Reader (기본 / JSON / SPA 모드)
+- curl Chrome Desktop UA
+
+**아직 성공 없으면 추가 시도**:
+- curl 모바일 UA + 모바일 URL (`m.{domain}`)
+- curl Googlebot UA
+- URL 변형 시도: `.json`, `/rss`, `/feed`
+
+**사이드카** (1차와 동시, low-trust):
+- Google AMP 캐시
+- archive.today
+- Wayback Machine
+→ **원본이 하나라도 성공하면 사이드카는 참고만.** 전부 실패 시에만 사이드카 채택 (provenance 태깅 필수)
+
+**모든 응답에서 메타데이터도 추출**: OGP, JSON-LD — [metadata.md](metadata.md) 참조
+
+상세: [jina.md](jina.md), [cache-archive.md](cache-archive.md), [rss.md](rss.md)
+
+---
+
+## 에스컬레이션 신호
+
+Phase 1 → Phase 2 전환 조건:
+
+| 신호 | 감지 방법 | 의미 |
+|------|-----------|------|
+| HTTP 403/430 | 상태 코드 | WAF/봇 차단 |
+| HTTP 429/503 | 상태 코드 | Rate limit (짧은 jitter retry 먼저, 실패 시 에스컬레이션) |
+| WAF 헤더 | `cf-ray`, `server: cloudflare`, `x-datadome` | Cloudflare/Akamai/DataDome |
+| WAF 쿠키 | `__cf_bm`, `_abck`, `datadome` | WAF 세션 |
+| 챌린지 본문 | `captcha`, `verify`, `enable javascript`, `check your browser` | JS 챌린지 |
+| 빈 SPA | `<div id="root"></div>` 외 콘텐츠 없음, 200자 미만 | JS 렌더링 필요 |
+| Redirect loop | 3회 이상 302/307 | 챌린지 리다이렉트 |
+
+**login/paywall 감지 시**: `login`, `sign in`, `로그인`, `subscribe`, `구독` 집중 → Phase 2/3으로 올려도 해결 안 됨. **"인증 필요"로 종료.**
+
+---
+
+## Phase 2: TLS 임퍼소네이션 (curl_cffi)
+
+**조건**: Phase 1에서 WAF/봇 차단 신호 감지
+
+**의존성 확보**:
 ```bash
-# 네이버 블로그
-curl -sL \
-  -H "User-Agent: Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1" \
-  -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" \
-  -H "Accept-Language: ko-KR,ko;q=0.9" \
-  -H "Referer: https://m.naver.com/" \
-  "https://m.blog.naver.com/PostView.naver?blogId={ID}&logNo={NO}"
-
-# 일반 사이트
-curl -sL \
-  -H "User-Agent: Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15" \
-  "{URL}"
+python3 -c "import curl_cffi" 2>/dev/null || pip install curl_cffi -q
 ```
+설치 실패 시 → 즉시 Phase 3으로.
 
-## 2. OGP 메타태그 추출
-
-최소한 제목+요약 확보.
-
-```bash
-curl -sL \
-  -H "User-Agent: Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)" \
-  "{URL}" \
-  | grep -E '<meta property="og:|<meta name="description'
-```
-
-## 3. Google 캐시 / Wayback Machine
-
-```bash
-curl -sL "https://webcache.googleusercontent.com/search?q=cache:{URL}"
-curl -sL "https://web.archive.org/web/{URL}"
-```
-
-iframe 기반 사이트(네이버)는 캐시도 실패할 수 있음.
-
-## 4. curl_cffi (TLS 핑거프린트 우회)
-
-Cloudflare 등 TLS 핑거프린트 차단 우회.
+**다중 타겟 순차 시도**: safari → chrome → firefox
 
 ```python
-# pip install curl_cffi 필요
 from curl_cffi import requests
-response = requests.get("{URL}", impersonate="chrome124")
-print(response.text)
+
+TARGETS = ["safari", "chrome", "firefox"]
+HEADERS = {
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8",
+    "Referer": "https://www.google.com/",
+}
+
+for target in TARGETS:
+    try:
+        session = requests.Session(impersonate=target)
+        session.headers.update(HEADERS)
+        resp = session.get("{URL}", timeout=20)
+        if resp.status_code == 200 and len(resp.text) > 300:
+            # 성공 — JSON-LD도 같이 추출
+            break
+    except:
+        continue
 ```
 
-## 5. Playwright MCP (최후 수단)
+성공 → 종료 / 실패 또는 JS 챌린지 → Phase 3
 
-JS 렌더링이 필수인 SPA 사이트에만 사용.
+상세: [tls-impersonate.md](tls-impersonate.md)
 
-```bash
-# 설치: claude mcp add playwright npx @playwright/mcp@latest
+---
+
+## Phase 3: Playwright MCP (브라우저)
+
+**조건**: Phase 2도 실패 또는 JS 챌린지/CAPTCHA 감지
+
+```
+browser_navigate → {URL}
+browser_wait_for → "body" (3초)
+browser_evaluate → () => document.body.innerText  (Light Mode — 먼저)
+필요 시 browser_snapshot → 접근성 트리 전체
 ```
 
-## 응답 검증 규칙
+**API 발견**: `browser_network_requests`로 숨은 JSON API를 찾으면 이후 curl_cffi로 재사용 가능.
 
-curl로 받은 응답이 실제 콘텐츠인지 판별:
+상세: [playwright.md](playwright.md)
 
-| 판정 | 조건 | 조치 |
+---
+
+## 응답 검증
+
+| 판정 | 조건 | 결과 |
 |------|------|------|
-| **성공** | 본문 1,000자 이상 + 주제 관련 키워드 | 소스로 사용 |
-| **부분 성공** | OG 메타/제목+요약만 | 보조 소스, `partial_content` 태그 |
-| **실패 — 로그인** | `login`, `sign in`, `로그인` 집중 | 다음 방법 시도 |
-| **실패 — CAPTCHA** | `captcha`, `verify`, `robot` 또는 200자 미만 | 다음 방법 시도 |
-| **실패 — 에러** | 4xx/5xx 또는 `not found`, `access denied` | 다음 방법 시도 |
-| **실패 — 빈 SPA** | `<div id="root"></div>` 외 콘텐츠 없음 | Playwright 또는 포기 |
+| **성공** | 콘텐츠 타입에 맞는 분량 + 주제 관련 키워드 | 채택 |
+| **부분 성공** | OG 메타/JSON-LD만 (본문 없음) | 보조 소스 |
+| **실패 — 인증** | login/paywall 감지 | "인증 필요"로 종료 |
+| **실패 — 챌린지** | CAPTCHA/JS challenge | 다음 Phase로 |
+| **실패 — 에러** | 4xx/5xx | 다음 Phase로 |
+| **실패 — 빈 SPA** | 콘텐츠 없음 | 다음 Phase로 |
 
-## Fallback 실행 규칙
+**콘텐츠 분량 기준** (유연하게):
+- 기사/블로그: 500자 이상
+- 상품 페이지: JSON-LD 있으면 성공
+- 트윗/짧은 글: 100자 이상
+- 프로필: JSON-LD Person 있으면 성공
 
-1. **우회 성공 시**: `via_fallback` 태그 + 방법 기록
-2. **모든 실패 시**: 실패 URL + 시도 결과 기록
-3. **대체 소스 재검색**: 동일 주제의 다른 소스를 WebSearch로 재검색
+## 전부 실패 시
+
+1. 시도한 Phase와 각 실패 신호를 기록
+2. 사이드카 결과가 있으면 provenance 태깅하여 채택
+3. 사이드카도 없으면 사용자에게 실패 보고 + 시도 결과 공유

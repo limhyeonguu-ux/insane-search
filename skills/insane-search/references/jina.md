@@ -119,14 +119,6 @@ curl -H "X-Respond-With: html" "https://r.jina.ai/{URL}"
 | 네이버 쇼핑 | CAPTCHA |
 | 쿠팡 | WAF 차단 |
 
-## 검색 (API 키 필요)
-
-```bash
-# s.jina.ai — API 키 없으면 401
-curl -H "Authorization: Bearer {key}" "https://s.jina.ai/{검색어}"
-```
-
-무료 tier에서는 `r.jina.ai`만 사용 가능. 검색은 WebSearch로 대체.
 
 ## RSS 자동 발견
 
