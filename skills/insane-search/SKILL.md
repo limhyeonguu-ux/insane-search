@@ -105,7 +105,7 @@ If the output is empty, just continue silently. (AskUserQuestion must NOT be in 
 | 플랫폼 | 방법 | 상세 |
 |--------|------|------|
 | X/Twitter | syndication (타임라인) + oEmbed (개별 트윗) + 키워드 검색: WebSearch → oEmbed | [twitter.md](references/twitter.md) |
-| Reddit | URL + `.json` + Mobile UA | [json-api.md](references/json-api.md) |
+| Reddit | Atom/RSS 피드(`.rss`) — 비인증 `.json`은 WAF 차단(403), score·댓글수는 OAuth | [json-api.md](references/json-api.md) |
 | Bluesky | AT Protocol (`public.api.bsky.app/xrpc/...`) | [public-api.md](references/public-api.md) |
 | Mastodon | 인스턴스별 공개 API | [public-api.md](references/public-api.md) |
 | Hacker News | Firebase API + Algolia Search | [json-api.md](references/json-api.md) |
@@ -255,9 +255,9 @@ curl -s "https://r.jina.ai/{URL}"
 # yt-dlp — 1,858 사이트 미디어 메타데이터
 yt-dlp --dump-json "URL"
 
-# Reddit
+# Reddit (.json은 WAF 차단됨 — Atom/RSS 피드로 우회; score·댓글수는 OAuth)
 curl -sL -H "User-Agent: Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15" \
-  "https://www.reddit.com/r/{sub}/hot.json?limit=10"
+  "https://www.reddit.com/r/{sub}/hot.rss?limit=25"
 
 # X/Twitter 타임라인
 curl -sL "https://syndication.twitter.com/srv/timeline-profile/screen-name/{handle}"
@@ -323,7 +323,7 @@ yt-dlp --write-sub --write-auto-sub --sub-lang "en,ko" --skip-download -o "/tmp/
 
 | 파일 | 언제 읽는가 | 무엇을 다루는가 |
 |------|-------------|-----------------|
-| [`json-api.md`](references/json-api.md) | Reddit/Wikipedia/HN/npm/PyPI 등 **URL 변형만으로** JSON을 주는 사이트 | Reddit `/json` suffix + Mobile UA, HN Firebase, Algolia Search, Wikipedia REST, npm/PyPI Registry API |
+| [`json-api.md`](references/json-api.md) | Reddit/Wikipedia/HN/npm/PyPI 등 **URL 변형만으로** JSON/피드를 주는 사이트 | Reddit Atom/RSS(`.rss`) 우회 + score·댓글용 OAuth(`.json`은 WAF 차단), HN Firebase, Algolia Search, Wikipedia REST, npm/PyPI Registry API |
 | [`public-api.md`](references/public-api.md) | Bluesky/Mastodon/arXiv/Stack Overflow/CrossRef/GitHub/OpenLibrary/Wayback 공식 API 사용 시 | 인증 없이 쓰는 공식 공개 REST/AT/Atom API 엔드포인트, 요청 형식, 공통 파라미터 |
 | [`twitter.md`](references/twitter.md) | X/Twitter 접근 — 프로필 타임라인, 특정 트윗, 키워드 검색 | `syndication.twitter.com` 타임라인, oEmbed 개별 트윗, 검색은 WebSearch로 URL 확보 후 oEmbed |
 | [`naver.md`](references/naver.md) | 네이버 블로그·뉴스·증권·검색 접근 | 서비스별 우회(블로그는 `m.blog.naver.com` 변환, 증권은 비공식 JSON, 검색은 `search.naver.com`), 한글 검색 쿼리 패턴 |
