@@ -1,10 +1,10 @@
-English | [한국어](README.ko.md)
+English | [한국어](README.ko.md) | [中文](README.zh.md) | [日本語](README.ja.md) | [Español](README.es.md)
 
 <div align="center">
 
 # insane-search
 
-**Impossible is nothing.**
+**Impossible is nothing. If it's public, insane-search gets in.**
 
 A resilient public-page reader for Claude Code. No API keys, no proxy setup.
 

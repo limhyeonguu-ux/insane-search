@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.3 — 2026-06-22
+
+- **5-language README** (matches the marketplace root): added `README.zh.md`, `README.ja.md`, `README.es.md` (full translations) and a 5-language switcher header across all files (en · ko · zh · ja · es). The "Impossible is nothing." slogan stays in English in zh/ja/es with a localized second line.
+- EN tagline gains a grounding second line: **"Impossible is nothing. If it's public, insane-search gets in."**
+
 ## 0.7.2 — 2026-06-22
 
 - Stronger hero tagline. EN: **"Impossible is nothing."** · KO: **"포기는 배추 셀 때나 쓰는 말. 공개된 페이지라면, insane-search는 결국 뚫어낸다."** — the descriptive sub-line still grounds what the plugin is.
