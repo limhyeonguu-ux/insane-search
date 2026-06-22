@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.2 — 2026-06-22
+
+- Stronger hero tagline. EN: **"Impossible is nothing."** · KO: **"포기는 배추 셀 때나 쓰는 말. 공개된 페이지라면, insane-search는 결국 뚫어낸다."** — the descriptive sub-line still grounds what the plugin is.
+
 ## 0.7.1 — 2026-06-22
 
 README overhaul — image-first landing that shows what the plugin does in one glance.

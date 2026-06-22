@@ -4,7 +4,7 @@ English | [한국어](README.ko.md)
 
 # insane-search
 
-**When Claude Code can't read a blocked page, this gets in anyway.**
+**Impossible is nothing.**
 
 A resilient public-page reader for Claude Code. No API keys, no proxy setup.
 

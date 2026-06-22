@@ -4,7 +4,7 @@
 
 # insane-search
 
-**Claude Code가 막힌 페이지를 못 읽을 때, 이건 기어이 뚫고 들어간다.**
+**포기는 배추 셀 때나 쓰는 말. 공개된 페이지라면, insane-search는 결국 뚫어낸다.**
 
 차단에 강한 공개 페이지 리더 — Claude Code용. API 키도, 프록시 설정도 없다.
 
