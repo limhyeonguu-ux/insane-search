@@ -114,6 +114,15 @@ if [ ! -f "$SETUP_MARKER" ]; then
       }
     ' >/dev/null 2>&1 || true
   fi
+  # Python fetch-engine deps — require curl_cffi >= 0.15 (impersonate="chrome"
+  # → Chrome 146 instead of stale 142, HTTP/3 fingerprints, SSRF-safe redirects).
+  # Upgrades an existing older curl_cffi too. Best-effort, backgrounded so first
+  # run stays fast. (Users whose setup marker already exists are upgraded by the
+  # version-gated guard in SKILL.md at next engine use.)
+  if command -v python3 >/dev/null 2>&1; then
+    ( python3 -c 'import curl_cffi,bs4,yaml; v=curl_cffi.__version__.split("."); assert (int(v[0]),int(v[1]))>=(0,15)' 2>/dev/null \
+        || python3 -m pip install -U "curl_cffi>=0.15.0" beautifulsoup4 pyyaml -q ) >/dev/null 2>&1 &
+  fi
   ts=$(date +%s 2>/dev/null || echo 0)
   printf '{"setup":true,"plugin":"%s","ts":%s}\n' "$PLUGIN" "$ts" > "$SETUP_MARKER"
 fi

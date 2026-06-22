@@ -232,9 +232,12 @@ result = fetch(
 
 ## 의존성 자동 설치
 
-최초 호출 시 필요 패키지를 자동 설치한다:
+최초 호출 시 필요 패키지를 자동 설치한다. **curl_cffi는 0.15.0 이상**을 요구한다 — 0.15부터
+`impersonate="chrome"`이 최신 Chrome(146+) 지문으로 갱신되고(0.14는 chrome142에 고정), HTTP/3 지문과
+SSRF-safe redirect 기본값이 추가됐다. 아래 가드는 **미설치뿐 아니라 0.15 미만이면 업그레이드**한다:
 ```bash
-python3 -c "import curl_cffi, bs4, yaml" 2>/dev/null || pip install curl_cffi beautifulsoup4 pyyaml -q
+python3 -c "import curl_cffi,bs4,yaml; v=curl_cffi.__version__.split('.'); assert (int(v[0]),int(v[1]))>=(0,15)" 2>/dev/null \
+  || pip install -U "curl_cffi>=0.15.0" beautifulsoup4 pyyaml -q
 ```
 
 Playwright 로컬 경로 사용 시 Node가 필요:

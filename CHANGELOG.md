@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.6.0 — 2026-06-22
+
+Engine overhaul — multi-AI reviewed (GPT-5.5 Pro + council) and effect-tested before shipping.
+
+- **Diversity scheduler** (`fetch_chain.py`): the grid now materializes a plan and varies TLS family × URL transform first, so a small attempt budget touches every family/transform instead of burning out on one. Measured: family×transform class coverage 3/10 → 10/10 at the same cap. `max_attempts=None` is now exhaustive (honours R6); `tls_impersonate_avoid` targets are deprioritized, not deleted; jitter only on a failed attempt; new `grid_exhausted` / `stop_reason` diagnostics.
+- **Validator v2** (`validators.py`): adds non-terminal `SUSPECT_OK`, JSON-aware validation (small API responses no longer mislabelled `CHALLENGE`), HARD vs SOFT markers (a `captcha` word can't override a matched selector), byte-accurate size, and 429/401/404/5xx status semantics. Measured: judgment errors 5/11 → 0/11 (incl. 2 false-successes removed).
+- **Per-host SessionPool + cookie bridge** (`transport.py`, `executor.py`): cookies and connections persist across attempts/pages; a browser that clears a JS challenge hands its cookies + UA to curl_cffi (FlareSolverr pattern). Proven: an injected clearance cookie converts a 403/challenge into a 200. Adds `fetch_many()` and root warmup.
+- **Playwright fallback hardening**: per-host profile isolation, `process.exit` → drained natural exit (no truncated HTML), single shared navigation deadline, JSON envelope (status / final URL / cookies / UA).
+- **Patchright support (additive)**: if `patchright` is installed it is used as a drop-in (Runtime.enable-free) Playwright per its official best-practice (`channel='chrome'`, `no_viewport`, no stealth/headers); otherwise behaviour is unchanged. Measured on rebrowser-bot-detector: `runtimeEnableLeak` passes, `navigator.webdriver` hidden.
+- **SSRF / redirect guard** (`safety.py`): blocks non-http(s) schemes and requests/redirects to private/loopback/link-local/metadata IPs (with DNS-rebinding check); every redirect hop is validated. `INSANE_ALLOW_PRIVATE=1` opts in for local use.
+- **Requires curl_cffi ≥ 0.15.0**: `impersonate="chrome"` now resolves to Chrome 146 (was the stale Chrome 142), plus HTTP/3 fingerprints and an SSRF-safe redirect default. Setup and the runtime guard upgrade an existing older curl_cffi.
+- Adds deterministic regression tests (`test_u1.py`, `test_u4.py`, `test_u7.py`).
+
 ## 0.5.2 — 2026-06-21
 
 - The GitHub-star prompt is shown in the user's current language; on a fresh session with no language signal yet, it falls back to the language detected from your recent Claude sessions (else English).
